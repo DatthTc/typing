@@ -64,6 +64,9 @@ block content
         data-input-method=inputMethod,
         data-sound-theme=soundTheme
       )
+        if lesson && lesson.content
+          each ch, idx in lesson.content.split('')
+            span.char.char-pending= ch
       //- Input ẩn để bắt phím
       input#typing-input(type="text", autocomplete="off", autocorrect="off", autocapitalize="off", spellcheck="false", tabindex="0")
 
@@ -109,5 +112,5 @@ block content
             | Xem thống kê chi tiết & Heatmap
 
 block scripts
-  //- Nạp core typing engine độc lập
-  script(src="/js/typing-engine.js")
+  //- Nạp core typing engine độc lập (v=2.1 để ép trình duyệt xóa cache)
+  script(src="/js/typing-engine.js?v=2.1")

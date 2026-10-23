@@ -241,7 +241,7 @@ const KEY_TO_FINGER = {
 
 function clearHighlights() {
   document.querySelectorAll('.key.active').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.finger.active').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.finger-active').forEach(el => el.classList.remove('finger-active'));
 }
 
 function highlightKey(keyChar) {
@@ -255,18 +255,25 @@ function highlightKey(keyChar) {
 
   const handSide = mapping.hand;
   const fingerName = mapping.finger;
-  let fingerSvgId = `finger-${handSide}-${fingerName}`;
-  if (fingerName === 'thumb') fingerSvgId = `finger-${handSide}-thumb`;
+  let fingerSvgId = `hand-${handSide}-${fingerName}`;
   const fingerEl = document.getElementById(fingerSvgId);
-  if (fingerEl) fingerEl.classList.add('active');
+  if (fingerEl) {
+    fingerEl.classList.add('finger-active');
+    const path = fingerEl.querySelector('.finger-path');
+    if (path) path.classList.add('finger-active');
+  }
 
   if (mapping.shift) {
     const shiftKeyId = (handSide === 'left') ? 'key-shift-right' : 'key-shift-left';
     const shiftEl = document.getElementById(shiftKeyId);
     if (shiftEl) shiftEl.classList.add('active');
     const oppHand = (handSide === 'left') ? 'right' : 'left';
-    const oppPinky = document.getElementById(`finger-${oppHand}-pinky`);
-    if (oppPinky) oppPinky.classList.add('active');
+    const oppPinky = document.getElementById(`hand-${oppHand}-pinky`);
+    if (oppPinky) {
+      oppPinky.classList.add('finger-active');
+      const oppPath = oppPinky.querySelector('.finger-path');
+      if (oppPath) oppPath.classList.add('finger-active');
+    }
   }
 }
 
