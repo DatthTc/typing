@@ -1,0 +1,54 @@
+header.navbar-custom.sticky.top-0.z-50
+  .container.mx-auto.px-4.py-3.flex.items-center.justify-between
+    //- Logo & Brand
+    a.flex.items-center.gap-2.text-xl.font-bold.no-underline(href="/", style="color: var(--accent);")
+      i.fa-solid.fa-keyboard.text-2xl
+      span VN Typing
+
+    //- Navigation Links
+    nav.hidden.md_flex.items-center.gap-6.text-sm.font-medium
+      a.nav-link.transition-colors(href="/", class=(currentPath === '/' ? 'text-yellow-400 font-semibold' : 'text-slate-300 hover:text-white'))
+        i.fa-solid.fa-house.mr-1.text-xs
+        | Trang chủ
+      a.nav-link.transition-colors(href="/practice", class=(currentPath === '/practice' ? 'text-yellow-400 font-semibold' : 'text-slate-300 hover:text-white'))
+        i.fa-solid.fa-play.mr-1.text-xs
+        | Luyện tập
+      a.nav-link.transition-colors(href="/custom", class=(currentPath === '/custom' ? 'text-yellow-400 font-semibold' : 'text-slate-300 hover:text-white'))
+        i.fa-solid.fa-file-lines.mr-1.text-xs
+        | Tự do & Nhập text
+      a.nav-link.transition-colors(href="/stats", class=(currentPath === '/stats' ? 'text-yellow-400 font-semibold' : 'text-slate-300 hover:text-white'))
+        i.fa-solid.fa-chart-simple.mr-1.text-xs
+        | Thống kê
+      a.nav-link.transition-colors(href="/arena", class=(currentPath === '/arena' ? 'text-yellow-400 font-semibold' : 'text-slate-300 hover:text-white'))
+        i.fa-solid.fa-trophy.mr-1.text-xs
+        | Đấu trường
+
+    //- User Session & Theme Controls
+    .flex.items-center.gap-3
+      //- Nút chuyển theme Dark/Light
+      button#btn-toggle-theme.p-2.rounded-lg.border.border-slate-700.bg-slate-800.hover_bg-slate-700.text-slate-200.transition-colors(title="Chuyển đổi giao diện Sáng / Tối")
+        i.fa-solid.fa-sun.text-yellow-400
+
+      if user
+        //- Đã đăng nhập
+        .dropdown
+          button(class="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 text-sm font-medium text-slate-200", data-bs-toggle="dropdown")
+            i.fa-solid.fa-circle-user.text-yellow-400
+            span= user.username
+            i.fa-solid.fa-chevron-down.text-xs.text-slate-400
+          ul.dropdown-menu.dropdown-menu-end.bg-slate-800.border.border-slate-700.text-slate-200.shadow-xl
+            li
+              a.dropdown-item.text-slate-300.hover_text-white.hover_bg-slate-700(href="/stats")
+                i.fa-solid.fa-chart-line.mr-2
+                | Hồ sơ & Thống kê
+            li
+              hr.dropdown-divider.border-slate-700
+            li
+              form(action="/logout", method="POST")
+                button.dropdown-item.text-red-400.hover_text-red-300.hover_bg-slate-700(type="submit")
+                  i.fa-solid.fa-right-from-bracket.mr-2
+                  | Đăng xuất
+      else
+        //- Chưa đăng nhập
+        a.text-xs.font-semibold.px-3.py-2.rounded-lg.text-slate-300.hover_text-white.transition-colors(href="/login") Đăng nhập
+        a.text-xs.font-semibold.px-3.py-2.rounded-lg.bg-yellow-500.hover_bg-yellow-400.text-slate-900.transition-colors(href="/register") Đăng ký

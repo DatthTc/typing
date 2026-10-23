@@ -1,0 +1,155 @@
+mixin keyboard()
+  .keyboard-container
+    //- HÀNG 1: ~ ` 1 2 3 4 5 6 7 8 9 0 - = Backspace
+    .keyboard-row
+      .key.finger-left-pinky#key-backquote(data-key="`")
+        span.key-sub ~
+        span.key-primary `
+      .key.finger-left-pinky#key-1(data-key="1")
+        span.key-sub !
+        span.key-primary 1
+      .key.finger-left-ring#key-2(data-key="2")
+        span.key-sub @
+        span.key-primary 2
+      .key.finger-left-middle#key-3(data-key="3")
+        span.key-sub #
+        span.key-primary 3
+      .key.finger-left-index#key-4(data-key="4")
+        span.key-sub $
+        span.key-primary 4
+      .key.finger-left-index#key-5(data-key="5")
+        span.key-sub %
+        span.key-primary 5
+      .key.finger-right-index#key-6(data-key="6")
+        span.key-sub ^
+        span.key-primary 6
+      .key.finger-right-index#key-7(data-key="7")
+        span.key-sub &
+        span.key-primary 7
+      .key.finger-right-middle#key-8(data-key="8")
+        span.key-sub *
+        span.key-primary 8
+      .key.finger-right-ring#key-9(data-key="9")
+        span.key-sub (
+        span.key-primary 9
+      .key.finger-right-pinky#key-0(data-key="0")
+        span.key-sub )
+        span.key-primary 0
+      .key.finger-right-pinky#key-minus(data-key="-")
+        span.key-sub _
+        span.key-primary -
+      .key.finger-right-pinky#key-equal(data-key="=")
+        span.key-sub +
+        span.key-primary =
+      .key.key-w-2.finger-right-pinky#key-backspace(data-key="Backspace")
+        span.key-primary Backspace
+
+    //- HÀNG 2: Tab q w e r t y u i o p [ ] \
+    .keyboard-row
+      .key.key-w-1-5.finger-left-pinky#key-tab(data-key="Tab")
+        span.key-primary Tab
+      .key.finger-left-pinky#key-q(data-key="q")
+        span.key-primary Q
+      .key.finger-left-ring#key-w(data-key="w")
+        span.key-primary W
+      .key.finger-left-middle#key-e(data-key="e")
+        span.key-primary E
+      .key.finger-left-index#key-r(data-key="r")
+        span.key-primary R
+      .key.finger-left-index#key-t(data-key="t")
+        span.key-primary T
+      .key.finger-right-index#key-y(data-key="y")
+        span.key-primary Y
+      .key.finger-right-index#key-u(data-key="u")
+        span.key-primary U
+      .key.finger-right-middle#key-i(data-key="i")
+        span.key-primary I
+      .key.finger-right-ring#key-o(data-key="o")
+        span.key-primary O
+      .key.finger-right-pinky#key-p(data-key="p")
+        span.key-primary P
+      .key.finger-right-pinky#key-bracket-left(data-key="[")
+        span.key-sub {
+        span.key-primary [
+      .key.finger-right-pinky#key-bracket-right(data-key="]")
+        span.key-sub }
+        span.key-primary ]
+      .key.key-w-1-5.finger-right-pinky#key-backslash(data-key="\\")
+        span.key-sub |
+        span.key-primary \
+
+    //- HÀNG 3: Caps a s d f g h j k l ; ' Enter
+    .keyboard-row
+      .key.key-w-1-75.finger-left-pinky#key-caps(data-key="Caps")
+        span.key-primary Caps
+      .key.finger-left-pinky#key-a(data-key="a")
+        span.key-primary A
+      .key.finger-left-ring#key-s(data-key="s")
+        span.key-primary S
+      .key.finger-left-middle#key-d(data-key="d")
+        span.key-primary D
+      .key.finger-left-index.key-home-bump#key-f(data-key="f")
+        span.key-primary F
+      .key.finger-left-index#key-g(data-key="g")
+        span.key-primary G
+      .key.finger-right-index#key-h(data-key="h")
+        span.key-primary H
+      .key.finger-right-index.key-home-bump#key-j(data-key="j")
+        span.key-primary J
+      .key.finger-right-middle#key-k(data-key="k")
+        span.key-primary K
+      .key.finger-right-ring#key-l(data-key="l")
+        span.key-primary L
+      .key.finger-right-pinky#key-semicolon(data-key=";")
+        span.key-sub :
+        span.key-primary ;
+      .key.finger-right-pinky#key-quote(data-key="'")
+        span.key-sub "
+        span.key-primary '
+      .key.key-w-2-25.finger-right-pinky#key-enter(data-key="Enter")
+        span.key-primary Enter
+
+    //- HÀNG 4: Shift z x c v b n m , . / Shift
+    .keyboard-row
+      .key.key-w-2-25.finger-left-pinky#key-shift-left(data-key="ShiftLeft")
+        span.key-primary Shift
+      .key.finger-left-pinky#key-z(data-key="z")
+        span.key-primary Z
+      .key.finger-left-ring#key-x(data-key="x")
+        span.key-primary X
+      .key.finger-left-middle#key-c(data-key="c")
+        span.key-primary C
+      .key.finger-left-index#key-v(data-key="v")
+        span.key-primary V
+      .key.finger-left-index#key-b(data-key="b")
+        span.key-primary B
+      .key.finger-right-index#key-n(data-key="n")
+        span.key-primary N
+      .key.finger-right-index#key-m(data-key="m")
+        span.key-primary M
+      .key.finger-right-middle#key-comma(data-key=",")
+        span.key-sub &lt;
+        span.key-primary ,
+      .key.finger-right-ring#key-period(data-key=".")
+        span.key-sub &gt;
+        span.key-primary .
+      .key.finger-right-pinky#key-slash(data-key="/")
+        span.key-sub ?
+        span.key-primary /
+      .key.key-w-2-25.finger-right-pinky#key-shift-right(data-key="ShiftRight")
+        span.key-primary Shift
+
+    //- HÀNG 5: Ctrl Win Alt Space Alt Ctrl
+    .keyboard-row
+      .key.key-w-1-5.finger-left-pinky#key-ctrl-left(data-key="ControlLeft")
+        span.key-primary Ctrl
+      .key.finger-left-pinky#key-win-left(data-key="MetaLeft")
+        span.key-primary Win
+      .key.key-w-1-5.finger-left-ring#key-alt-left(data-key="AltLeft")
+        span.key-primary Alt
+      .key.key-w-space.finger-thumbs#key-space(data-key=" ")
+        span.key-primary Space
+      .key.key-w-1-5.finger-right-ring#key-alt-right(data-key="AltRight")
+        span.key-primary Alt
+      .key.key-w-1-5.finger-right-pinky#key-ctrl-right(data-key="ControlRight")
+        span.key-primary Ctrl

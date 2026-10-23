@@ -1,0 +1,113 @@
+extends ../layouts/main.pug
+include ../partials/keyboard.pug
+
+block content
+  .container.mx-auto.px-4.max-w-5xl
+    //- Header bài học & Tùy chọn luyện tập
+    .flex.flex-wrap.items-center.justify-between.gap-4.mb-6.p-4.rounded-2xl.border.border-slate-800(style="background-color: var(--bg-secondary);")
+      div
+        .flex.items-center.gap-2
+          if lesson && lesson.level
+            span(class="px-2 py-px rounded-md bg-yellow-500 bg-opacity-20 text-yellow-400 text-xs font-bold")
+              = `Level ${lesson.level} - Bài ${lesson.stage}`
+          h1.text-xl.font-bold.text-slate-100.m-0= lesson ? lesson.title : 'Luyện tập gõ 10 ngón'
+        if lesson && lesson.description
+          p.text-xs.text-slate-400.mt-1= lesson.description
+
+      //- Thanh công cụ (Tools & Options)
+      .flex.flex-wrap.items-center.gap-3
+        //- Toggle Chế độ bộ gõ: Web vs Ngoài
+        div(class="flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-800 border border-slate-700")
+          label.relative.inline-flex.items-center.cursor-pointer
+            input#toggle-ime-mode.sr-only.peer(type="checkbox", checked)
+            div(class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-500")
+          span#ime-mode-label.text-xs.font-medium.text-slate-300 Bộ gõ Web (Khuyên dùng)
+
+        //- Kiểu gõ TELEX / VNI
+        select#toggle-input-method(class="px-3 py-1 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-yellow-400 cursor-pointer")
+          option(value="TELEX", selected=(inputMethod === 'TELEX')) TELEX
+          option(value="VNI", selected=(inputMethod === 'VNI')) VNI
+
+        //- Âm thanh phím cơ
+        select#select-sound-theme(class="px-3 py-1 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 cursor-pointer")
+          option(value="blue", selected=(soundTheme === 'blue')) 🔊 Blue Switch
+          option(value="brown", selected=(soundTheme === 'brown')) 🔉 Brown Switch
+          option(value="red", selected=(soundTheme === 'red')) 🔈 Red Switch
+          option(value="typewriter", selected=(soundTheme === 'typewriter')) ⌨️ Máy đánh chữ
+          option(value="off", selected=(soundTheme === 'off')) 🔇 Tắt âm
+
+        //- Nút Luyện lại
+        button#btn-restart(class="px-3 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-semibold transition-colors", title="Bắt đầu lại (Restart)")
+          i.fa-solid.fa-rotate-right.mr-1
+          | Làm lại
+
+    //- Thanh thống kê Realtime
+    .grid.grid-cols-2.md_grid-cols-4.gap-4.mb-6
+      .stat-card
+        span#stat-wpm.stat-value 0
+        span.stat-label WPM (Từ/Phút)
+      .stat-card
+        span#stat-kcpm.stat-value 0
+        span.stat-label KCPM (Phím/Phút)
+      .stat-card
+        span#stat-accuracy.stat-value 100%
+        span.stat-label Độ chính xác
+      .stat-card
+        span#stat-timer.stat-value 00:00
+        span.stat-label Thời gian
+
+    //- Khu vực hiển thị đoạn văn bản cần gõ
+    .typing-box.mb-6
+      #text-display(
+        data-content=(lesson ? lesson.content : ''),
+        data-lesson-id=(lesson ? lesson._id : ''),
+        data-input-method=inputMethod,
+        data-sound-theme=soundTheme
+      )
+      //- Input ẩn để bắt phím
+      input#typing-input(type="text", autocomplete="off", autocorrect="off", autocapitalize="off", spellcheck="false", tabindex="0")
+
+    //- Bàn phím ảo ANSI 5 hàng
+    .mb-6
+      +keyboard()
+
+    //- Bàn tay hướng dẫn 10 ngón SVG
+    .mb-6
+      include ../partials/hands-svg.pug
+
+    //- Modal kết quả hoàn thành bài học
+    #result-modal.hidden.fixed.inset-0.z-50.flex.items-center.justify-center.p-4.modal-backdrop-custom
+      div(class="p-6 md:p-8 rounded-3xl border border-yellow-500 border-opacity-30 max-w-md w-full text-center shadow-2xl", style="background-color: var(--bg-secondary);")
+        .w-16.h-16.rounded-2xl.bg-yellow-500.bg-opacity-20.text-yellow-400.mx-auto.flex.items-center.justify-center.text-3xl.mb-4
+          i.fa-solid.fa-award
+        h3.text-2xl.font-extrabold.text-slate-100.mb-2 Hoàn Thành Xuất Sắc!
+        p.text-xs.text-slate-400.mb-6 Bạn đã hoàn thành bài tập với các thông số chi tiết dưới đây:
+
+        .grid.grid-cols-2.gap-3.mb-6
+          .p-3.rounded-xl.bg-slate-800.border.border-slate-700
+            span#res-wpm.block.text-2xl.font-bold.text-yellow-400 0
+            span.text-xs.text-slate-400 WPM
+          .p-3.rounded-xl.bg-slate-800.border.border-slate-700
+            span#res-kcpm.block.text-2xl.font-bold.text-cyan-400 0
+            span.text-xs.text-slate-400 KCPM
+          .p-3.rounded-xl.bg-slate-800.border.border-slate-700
+            span#res-accuracy.block.text-2xl.font-bold.text-green-400 100%
+            span.text-xs.text-slate-400 Chính xác
+          .p-3.rounded-xl.bg-slate-800.border.border-slate-700
+            span#res-time.block.text-2xl.font-bold.text-purple-400 0s
+            span.text-xs.text-slate-400 Thời gian
+
+        .flex.flex-col.gap-2
+          if nextLesson
+            a.w-full.py-3.rounded-xl.bg-yellow-500.hover_bg-yellow-400.text-slate-950.font-bold.text-sm.transition-all.no-underline(href=`/lesson/${nextLesson._id}`)
+              | Bài tiếp theo: #{nextLesson.title}
+              i.fa-solid.fa-arrow-right.ml-2
+          button#btn-modal-restart.w-full.py-3.rounded-xl.bg-slate-800.hover_bg-slate-700.text-slate-200.font-semibold.text-sm.border.border-slate-700.transition-colors
+            i.fa-solid.fa-rotate-right.mr-2
+            | Luyện lại bài này
+          a.w-full.py-2.text-xs.text-slate-400.hover_text-yellow-400.transition-colors.no-underline(href="/stats")
+            | Xem thống kê chi tiết & Heatmap
+
+block scripts
+  //- Nạp core typing engine bằng ES6 Module
+  script(type="module", src="/js/typing-engine.js")

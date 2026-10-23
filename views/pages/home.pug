@@ -1,0 +1,60 @@
+extends ../layouts/main.pug
+
+block content
+  .container.mx-auto.px-4.max-w-6xl
+    //- Hero Header
+    .text-center.py-8
+      div(class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-yellow-500 bg-opacity-10 border border-yellow-500 border-opacity-30 text-yellow-400 text-xs font-semibold mb-4")
+        i.fa-solid.fa-bolt
+        | Chuẩn Bàn Phím ANSI 10 Ngón • Bộ Gõ Telex & VNI
+      h1.text-4xl.md_text-5xl.font-extrabold.tracking-tight.mb-3(style="color: var(--accent);")
+        | Luyện Gõ 10 Ngón Tiếng Việt
+      p.text-slate-400.text-base.md_text-lg.max-w-2xl.mx-auto
+        | Làm chủ tốc độ gõ phím với lộ trình từ hàng phím cơ sở đến các âm tiết và thanh điệu phức tạp, phản xạ bằng 0ms với hướng dẫn bàn tay trực quan.
+
+      .mt-6.flex.flex-wrap.justify-center.gap-4
+        a(class="px-6 py-3 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold text-sm transition-all shadow-lg no-underline", href="/practice")
+          i.fa-solid.fa-play.mr-2
+          | Bắt đầu Luyện tập ngay
+        a.px-6.py-3.rounded-xl.bg-slate-800.hover_bg-slate-700.text-slate-200.font-semibold.text-sm.border.border-slate-700.transition-all.no-underline(href="/custom")
+          i.fa-solid.fa-file-import.mr-2
+          | Nhập văn bản tùy ý
+
+    if error
+      .p-4.mb-6.rounded-xl.bg-red-500.bg-opacity-10.border.border-red-500.text-red-400.text-sm.text-center
+        i.fa-solid.fa-circle-exclamation.mr-2
+        = error
+
+    //- 4 Cấp độ bài học (Levels)
+    .grid.grid-cols-1.md_grid-cols-2.gap-6.mt-8
+      each levelNum in [1, 2, 3, 4]
+        - const lvl = levels && levels[levelNum]
+        if lvl
+          .p-6.rounded-2xl.border.border-slate-800(style="background-color: var(--bg-secondary);")
+            .flex.items-center.justify-between.mb-3
+              .flex.items-center.gap-3
+                .w-10.h-10.rounded-xl.bg-yellow-500.bg-opacity-10.text-yellow-400.flex.items-center.justify-center.font-bold.text-lg
+                  = levelNum
+                div
+                  h2.text-lg.font-bold.text-slate-100= lvl.title
+                  p.text-xs.text-slate-400= lvl.description
+
+            //- Danh sách các bài học (Stages)
+            .mt-4.space-y-3
+              if lvl.lessons && lvl.lessons.length > 0
+                each lesson in lvl.lessons
+                  div(class="p-3 rounded-xl bg-slate-800 bg-opacity-50 border border-slate-700 hover:border-yellow-500 transition-all flex items-center justify-between")
+                    div
+                      .flex.items-center.gap-2
+                        span.text-xs.font-semibold.text-yellow-400= `Bài ${lesson.stage}:`
+                        span.text-sm.font-medium.text-slate-200= lesson.title
+                      if lesson.targetKeys && lesson.targetKeys.length > 0
+                        div(class="flex flex-wrap gap-1 mt-1")
+                          each key in lesson.targetKeys.slice(0, 8)
+                            span(class="px-2 py-px rounded bg-slate-900 text-slate-300 font-mono text-xs border border-slate-700")= key
+                    a(class="px-3 py-1 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-slate-900 text-xs font-bold transition-colors no-underline", href=`/lesson/${lesson._id}`)
+                      | Bắt đầu
+              else
+                .p-4.rounded-xl.bg-slate-800.text-center.text-xs.text-slate-400
+                  | Chưa có bài học nào trong cấp độ này. Vui lòng chạy lệnh: 
+                  code(class="px-2 py-px bg-slate-900 rounded text-yellow-400") npm run seed

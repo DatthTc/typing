@@ -1,0 +1,207 @@
+extends ../layouts/main.pug
+include ../partials/keyboard.pug
+
+block head
+  //- Chart.js CDN
+  script(src="https://cdn.jsdelivr.net/npm/chart.js")
+
+block content
+  .container.mx-auto.px-4.max-w-5xl
+    .mb-6.text-center
+      h1.text-3xl.font-extrabold.text-slate-100.mb-2
+        i.fa-solid.fa-chart-pie.mr-2(style="color: var(--accent);")
+        | Thống Kê & Bản Đồ Nhiệt Kỹ Năng Gõ (Heatmap)
+      p.text-sm.text-slate-400 Phân tích tốc độ WPM, độ chuẩn xác và các phím ngón tay còn yếu để cải thiện phản xạ.
+
+    //- 4 Thẻ chỉ số tổng quan
+    .grid.grid-cols-2.md_grid-cols-4.gap-4.mb-8
+      .stat-card
+        span.stat-value= avgWpm
+        span.stat-label WPM Trung bình
+      .stat-card
+        span.stat-value= maxWpm
+        span.stat-label WPM Kỷ lục
+      .stat-card
+        span.stat-value= `${avgAccuracy}%`
+        span.stat-label Độ chính xác TB
+      .stat-card
+        span.stat-value= totalCompleted
+        span.stat-label Bài đã hoàn thành
+
+    //- Biểu đồ tiến độ WPM & Độ chính xác
+    .p-6.rounded-2xl.border.border-slate-800.mb-8(style="background-color: var(--bg-secondary);")
+      .flex.items-center.justify-between.mb-4
+        h2.text-base.font-bold.text-slate-100.flex.items-center.gap-2
+          i.fa-solid.fa-chart-line.text-yellow-400
+          | Lịch sử Tốc độ WPM & Độ chính xác
+        span.text-xs.text-slate-500 Biểu đồ xu hướng gần đây
+      .w-full.h-64
+        canvas#progressChart
+
+    //- Bàn phím Heatmap
+    .p-6.rounded-2xl.border.border-slate-800.mb-8(style="background-color: var(--bg-secondary);")
+      .flex.flex-wrap.items-center.justify-between.gap-4.mb-6
+        div
+          h2.text-base.font-bold.text-slate-100.flex.items-center.gap-2
+            i.fa-solid.fa-fire-flame-curved.text-red-400
+            | Bản đồ nhiệt Bàn phím (Error Heatmap)
+          p.text-xs.text-slate-400 Các phím chuyển dần sang màu cam/đỏ tương ứng với tần suất gõ sai cao
+        
+        //- Chú thích màu Heatmap & Nút Luyện phím yếu
+        .flex.items-center.gap-4
+          .flex.items-center.gap-2.text-xs.text-slate-400
+            span.inline-block.w-3.h-3.rounded.bg-green-500.opacity-70
+            span Chuẩn
+            span.inline-block.w-3.h-3.rounded.bg-yellow-500.opacity-70.ml-2
+            span Ít lỗi
+            span.inline-block.w-3.h-3.rounded.bg-red-500.opacity-80.ml-2
+            span Hay sai
+          button#btn-practice-weak(class="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition-all shadow-lg")
+            i(class="fa-solid fa-bullseye mr-1")
+            | Luyện các phím yếu ngay
+
+      //- Bàn phím ảo để render Heatmap
+      #heatmap-keyboard-wrapper
+        +keyboard()
+
+    //- Lịch sử các lần gõ gần nhất
+    if logs && logs.length > 0
+      .p-6.rounded-2xl.border.border-slate-800(style="background-color: var(--bg-secondary);")
+        h2.text-base.font-bold.text-slate-100.mb-4.flex.items-center.gap-2
+          i.fa-solid.fa-list-check.text-yellow-400
+          | Nhật ký luyện gõ chi tiết
+        .overflow-x-auto
+          table.w-full.text-left.text-sm.text-slate-300
+            thead.text-xs.uppercase.bg-slate-800.text-slate-400
+              tr
+                th.px-4.py-3 Bài học / Văn bản
+                th.px-4.py-3 WPM
+                th.px-4.py-3 KCPM
+                th.px-4.py-3 Chính xác
+                th.px-4.py-3 Thời gian
+                th.px-4.py-3 Ngày hoàn thành
+            tbody.divide-y.divide-slate-800
+              each log in logs.slice(0, 15)
+                tr(class="hover:bg-slate-800")
+                  td.px-4.py-3.font-medium.text-slate-200
+                    = log.lessonId ? log.lessonId.title : (log.customTitle || 'Văn bản tùy chọn')
+                  td.px-4.py-3.text-yellow-400.font-bold= log.wpm
+                  td.px-4.py-3.text-cyan-400= log.kcpm
+                  td.px-4.py-3.text-green-400= `${log.accuracy}%`
+                  td.px-4.py-3= `${log.duration}s`
+                  td.px-4.py-3.text-xs.text-slate-400
+                    = new Date(log.createdAt).toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+
+block scripts
+  script.
+    // Dữ liệu từ Controller truyền sang
+    const chartLabels = !{chartLabelsJSON || '[]'};
+    const chartWpmData = !{chartWpmDataJSON || '[]'};
+    const chartAccuracyData = !{chartAccuracyDataJSON || '[]'};
+    const heatmapData = !{heatmapJSON || '{}'};
+
+    // 1. Khởi tạo Chart.js Biểu đồ
+    const ctx = document.getElementById('progressChart');
+    if (ctx && chartLabels.length > 0) {
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartLabels,
+          datasets: [
+            {
+              label: 'WPM (Từ/Phút)',
+              data: chartWpmData,
+              borderColor: '#e2b714',
+              backgroundColor: 'rgba(226, 183, 20, 0.1)',
+              tension: 0.35,
+              fill: true,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Độ chính xác (%)',
+              data: chartAccuracyData,
+              borderColor: '#4ade80',
+              backgroundColor: 'transparent',
+              borderDash: [5, 5],
+              tension: 0.2,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              grid: { color: 'rgba(255, 255, 255, 0.05)' }
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              min: 0,
+              max: 100,
+              grid: { drawOnChartArea: false }
+            },
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' }
+            }
+          }
+        }
+      });
+    }
+
+    // 2. Tô màu Heatmap trên bàn phím ảo
+    const counts = Object.values(heatmapData);
+    const maxErrors = counts.length > 0 ? Math.max(...counts) : 0;
+
+    for (const [key, errorCount] of Object.entries(heatmapData)) {
+      const escapedKey = key.toLowerCase();
+      // Tìm phím tương ứng trong DOM
+      let keyEl = document.querySelector(`.key[data-key="${escapedKey}"]`);
+      if (!keyEl && escapedKey === ' ') keyEl = document.getElementById('key-space');
+
+      if (keyEl && maxErrors > 0) {
+        const ratio = errorCount / maxErrors;
+        if (ratio > 0.5) {
+          keyEl.classList.add('heatmap-hot');
+        } else if (ratio > 0.2) {
+          keyEl.classList.add('heatmap-warm');
+        } else {
+          keyEl.classList.add('heatmap-cold');
+        }
+        keyEl.title = `Số lần gõ sai: ${errorCount}`;
+      }
+    }
+
+    // 3. Xử lý nút Luyện các phím yếu
+    const btnPracticeWeak = document.getElementById('btn-practice-weak');
+    if (btnPracticeWeak) {
+      btnPracticeWeak.addEventListener('click', async () => {
+        try {
+          const res = await fetch('/api/stats/weak-keys-lesson');
+          const data = await res.json();
+          if (data.success && data.content) {
+            // Lưu và chuyển tới practice
+            const saveRes = await fetch('/api/custom/save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: `Luyện tập phím yếu: ${data.weakKeys.join(', ')}`,
+                content: data.content
+              })
+            });
+            const saveData = await saveRes.json();
+            if (saveData.success) {
+              window.location.href = `/practice?customId=${saveData.customId}`;
+            }
+          }
+        } catch (e) {
+          alert('Không thể tạo bài luyện phím yếu. Vui lòng thử lại!');
+        }
+      });
+    }

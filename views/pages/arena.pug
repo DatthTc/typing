@@ -1,0 +1,211 @@
+extends ../layouts/main.pug
+
+block content
+  .container.mx-auto.px-4.max-w-5xl
+    .mb-6.text-center
+      h1.text-3xl.font-extrabold.text-slate-100.mb-2
+        i.fa-solid.fa-trophy.mr-2(style="color: var(--accent);")
+        | Đấu Trường Gõ Nhanh (PvP Realtime Typing Race)
+      p.text-sm.text-slate-400 Cùng tham gia cuộc đua gõ phím thời gian thực với bạn bè qua kết nối Socket.io.
+
+    //- Khu vực thiết lập phòng (Lobby Controls)
+    #lobby-section.p-6.rounded-2xl.border.border-slate-800.mb-8.max-w-xl.mx-auto(style="background-color: var(--bg-secondary);")
+      h2.text-base.font-bold.text-slate-100.mb-4.text-center Tham gia cuộc đua
+      .space-y-4
+        div
+          label(class="block text-xs font-semibold text-slate-300 mb-1") Biệt danh người đua (Nickname)
+          input#arena-username(class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-sm",
+            type="text",
+            value=(user ? user.username : 'Racer_' + Math.floor(Math.random() * 900 + 100)),
+            placeholder="Nhập tên của bạn"
+          )
+
+        div
+          label(class="block text-xs font-semibold text-slate-300 mb-1") Mã phòng (Room ID)
+          input#arena-room-id(class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-sm",
+            type="text",
+            value="arena-public",
+            placeholder="Mã phòng ví dụ: room-101"
+          )
+
+        .flex.gap-3.pt-2
+          button#btn-join-room.w-full.py-3.rounded-xl.bg-yellow-500.hover_bg-yellow-400.text-slate-950.font-bold.text-sm.transition-all
+            i.fa-solid.fa-flag-checkered.mr-2
+            | Vào Đường Đua
+
+    //- Khu vực đường đua trực tiếp (Race Arena)
+    #race-section.hidden.space-y-6
+      //- Thanh thông tin phòng
+      .flex.items-center.justify-between.p-4.rounded-2xl.border.border-slate-800(style="background-color: var(--bg-secondary);")
+        .flex.items-center.gap-3
+          span.text-xs.text-slate-400 Phòng:
+          span#display-room-id.font-mono.text-sm.font-bold.text-yellow-400 arena-public
+        .flex.items-center.gap-3
+          button#btn-restart-race(class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700")
+            i.fa-solid.fa-rotate.mr-1
+            | Đua lại
+
+      //- Bảng tiến độ người chơi (Player Progress Bars)
+      .p-6.rounded-2xl.border.border-slate-800(style="background-color: var(--bg-secondary);")
+        h2.text-sm.font-bold.text-slate-300.mb-4.uppercase.tracking-wider
+          i.fa-solid.fa-road.mr-2
+          | Tiến độ cuộc đua
+        #players-track.space-y-4
+          //- Các người chơi sẽ được render động ở đây
+
+      //- Khu vực hiển thị văn bản gõ của cuộc đua
+      .typing-box.mb-6
+        #arena-text-display.text-2xl.font-mono(style="font-family: 'JetBrains Mono', monospace; line-height: 2;")
+        input#arena-typing-input(type="text", autocomplete="off", autocorrect="off", spellcheck="false", tabindex="0")
+
+block scripts
+  script.
+    const socket = io();
+    let currentRoom = '';
+    let currentUser = '';
+    let raceText = '';
+    let currentIndex = 0;
+    let startTime = null;
+    let isFinished = false;
+
+    const lobbySection = document.getElementById('lobby-section');
+    const raceSection = document.getElementById('race-section');
+    const btnJoinRoom = document.getElementById('btn-join-room');
+    const btnRestartRace = document.getElementById('btn-restart-race');
+    const arenaUsername = document.getElementById('arena-username');
+    const arenaRoomId = document.getElementById('arena-room-id');
+    const displayRoomId = document.getElementById('display-room-id');
+    const playersTrack = document.getElementById('players-track');
+    const arenaTextDisplay = document.getElementById('arena-text-display');
+    const arenaTypingInput = document.getElementById('arena-typing-input');
+
+    btnJoinRoom.addEventListener('click', () => {
+      currentUser = arenaUsername.value.trim() || 'Racer';
+      currentRoom = arenaRoomId.value.trim() || 'public-arena';
+
+      displayRoomId.textContent = currentRoom;
+      socket.emit('join_room', { roomId: currentRoom, username: currentUser });
+
+      lobbySection.classList.add('hidden');
+      raceSection.classList.remove('hidden');
+    });
+
+    btnRestartRace.addEventListener('click', () => {
+      socket.emit('restart_race');
+    });
+
+    // Nhận thông tin phòng và văn bản từ Server
+    socket.on('room_update', ({ roomId, text, players }) => {
+      raceText = text;
+      renderRaceText();
+      renderPlayers(players);
+      resetLocalRace();
+    });
+
+    socket.on('progress_update', ({ id, progress, wpm }) => {
+      updatePlayerUI(id, progress, wpm);
+    });
+
+    socket.on('player_finished', ({ username, wpm }) => {
+      const banner = document.createElement('div');
+      banner.className = 'p-3 rounded-xl bg-yellow-500 bg-opacity-20 border border-yellow-500 text-yellow-300 text-xs font-semibold text-center mb-3 animate-bounce';
+      banner.textContent = `🎉 ${username} đã cán đích với tốc độ ${wpm} WPM!`;
+      playersTrack.prepend(banner);
+    });
+
+    socket.on('race_restarted', ({ text, players }) => {
+      raceText = text;
+      renderRaceText();
+      renderPlayers(players);
+      resetLocalRace();
+    });
+
+    function renderRaceText() {
+      arenaTextDisplay.innerHTML = '';
+      Array.from(raceText).forEach((ch, idx) => {
+        const span = document.createElement('span');
+        span.id = `arena-char-${idx}`;
+        span.className = 'char char-pending';
+        span.textContent = ch;
+        arenaTextDisplay.appendChild(span);
+      });
+      highlightCurrentArenaChar();
+    }
+
+    function renderPlayers(players) {
+      playersTrack.innerHTML = '';
+      players.forEach(p => {
+        const isSelf = p.id === socket.id;
+        const playerRow = document.createElement('div');
+        playerRow.id = `player-row-${p.id}`;
+        playerRow.className = 'space-y-1.5';
+        playerRow.innerHTML = `
+          <div class="flex items-center justify-between text-xs font-semibold">
+            <span class="${isSelf ? 'text-yellow-400 font-bold' : 'text-slate-300'}">
+              <i class="fa-solid fa-car-side mr-1.5"></i> ${p.username} ${isSelf ? '(Bạn)' : ''}
+            </span>
+            <span class="text-slate-400 font-mono"><span id="wpm-${p.id}">${p.wpm || 0}</span> WPM</span>
+          </div>
+          <div class="w-full h-3 rounded-full bg-slate-800 overflow-hidden border border-slate-700">
+            <div id="bar-${p.id}" class="h-full rounded-full transition-all duration-200 ${isSelf ? 'bg-yellow-500' : 'bg-cyan-500'}" style="width: ${p.progress || 0}%"></div>
+          </div>
+        `;
+        playersTrack.appendChild(playerRow);
+      });
+    }
+
+    function updatePlayerUI(id, progress, wpm) {
+      const bar = document.getElementById(`bar-${id}`);
+      const wpmEl = document.getElementById(`wpm-${id}`);
+      if (bar) bar.style.width = `${progress}%`;
+      if (wpmEl) wpmEl.textContent = String(wpm);
+    }
+
+    function resetLocalRace() {
+      currentIndex = 0;
+      startTime = null;
+      isFinished = false;
+      highlightCurrentArenaChar();
+      arenaTypingInput.focus();
+    }
+
+    function highlightCurrentArenaChar() {
+      document.querySelectorAll('#arena-text-display .char-current').forEach(el => el.classList.remove('char-current'));
+      const cur = document.getElementById(`arena-char-${currentIndex}`);
+      if (cur) cur.classList.add('char-current');
+    }
+
+    // Bắt phím cho chế độ đua
+    window.addEventListener('keydown', (e) => {
+      if (raceSection.classList.contains('hidden') || isFinished) return;
+      if (['Alt', 'Control', 'Meta', 'Shift', 'CapsLock', 'Tab'].includes(e.key)) return;
+
+      e.preventDefault();
+
+      if (!startTime) startTime = Date.now();
+
+      const expectedChar = raceText[currentIndex];
+      if (e.key === expectedChar) {
+        const charEl = document.getElementById(`arena-char-${currentIndex}`);
+        if (charEl) charEl.className = 'char char-correct';
+
+        currentIndex++;
+        highlightCurrentArenaChar();
+
+        const progress = Math.round((currentIndex / raceText.length) * 100);
+        const elapsedMins = (Date.now() - startTime) / 60000 || (1/60);
+        const wpm = Math.round((currentIndex / 5) / elapsedMins);
+
+        socket.emit('typing_progress', { progress, wpm });
+
+        if (currentIndex >= raceText.length) {
+          isFinished = true;
+        }
+      } else {
+        const charEl = document.getElementById(`arena-char-${currentIndex}`);
+        if (charEl) {
+          charEl.className = 'char char-wrong';
+          setTimeout(() => highlightCurrentArenaChar(), 200);
+        }
+      }
+    });

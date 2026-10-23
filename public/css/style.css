@@ -1,0 +1,423 @@
+/* ====================================================================
+   VIETNAMESE TOUCH TYPING - MONKEYTYPE INSPIRED DARK THEME STYLESHEET
+   ==================================================================== */
+
+:root {
+  --bg-primary: #1e1e2e;
+  --bg-secondary: #252538;
+  --bg-tertiary: #2e2e44;
+  --text-main: #d1d5db;
+  --text-muted: #6b7280;
+  --accent: #e2b714;
+  --accent-rgb: 226, 183, 20;
+  --correct: #4ade80;
+  --wrong: #f87171;
+  --key-bg: #2a2b3d;
+  --key-border: #38394e;
+  --key-shadow: #181926;
+  --key-text: #e5e7eb;
+
+  /* Finger Color Zones (Soft Pastel Translucent) */
+  --zone-left-pinky: rgba(244, 63, 94, 0.22);
+  --zone-left-ring: rgba(249, 115, 22, 0.22);
+  --zone-left-middle: rgba(234, 179, 8, 0.22);
+  --zone-left-index: rgba(34, 197, 94, 0.22);
+  --zone-thumbs: rgba(168, 85, 247, 0.22);
+  --zone-right-index: rgba(6, 182, 212, 0.22);
+  --zone-right-middle: rgba(59, 130, 246, 0.22);
+  --zone-right-ring: rgba(99, 102, 241, 0.22);
+  --zone-right-pinky: rgba(236, 72, 153, 0.22);
+}
+
+/* Light Theme Variables */
+body.light-theme {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --text-main: #1e293b;
+  --text-muted: #94a3b8;
+  --accent: #2563eb;
+  --accent-rgb: 37, 99, 235;
+  --correct: #16a34a;
+  --wrong: #dc2626;
+  --key-bg: #ffffff;
+  --key-border: #cbd5e1;
+  --key-shadow: #94a3b8;
+  --key-text: #0f172a;
+}
+
+/* Global Reset & Base */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Typography & Monospace */
+.font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
+
+/* Navbar Custom Styling */
+.navbar-custom {
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--bg-tertiary);
+}
+
+/* Typing Display Box */
+.typing-box {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 1rem;
+  padding: 1.5rem 2rem;
+  position: relative;
+  min-height: 140px;
+  max-height: 240px;
+  overflow-y: auto;
+  user-select: none;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+  cursor: text;
+}
+
+#text-display {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.6rem;
+  line-height: 2.2;
+  letter-spacing: 0.05em;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* ── Token (syllable) states ────────────────────────────────── */
+.token {
+  display: inline;
+}
+
+/* Token hiện tại đang được gõ */
+.token.token-current {
+  /* cursor được đặt ở char đầu tiên của token */
+}
+
+/* Token hoàn thành đúng */
+.token.token-correct .char {
+  color: var(--correct);
+}
+
+/* Token bị lỗi (bỏ qua hoặc gõ sai khi bấm Space) */
+.token.token-wrong .char {
+  color: var(--wrong);
+  text-decoration: underline wavy var(--wrong);
+  opacity: 0.85;
+}
+
+/* Flash lỗi nhẹ khi gõ phím sai */
+.token.token-error-flash {
+  animation: flash-wrong 0.2s ease;
+}
+
+@keyframes flash-wrong {
+  0%, 100% { background: transparent; }
+  50% { background: rgba(248, 113, 113, 0.15); border-radius: 4px; }
+}
+
+/* Character States */
+.char {
+  position: relative;
+  transition: color 0.1s ease;
+}
+
+.char.char-pending {
+  color: var(--text-muted);
+}
+
+/* Đang gõ dở (phần đã gõ đúng trong âm tiết hiện tại) */
+.char.char-typing {
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.char.char-correct {
+  color: var(--correct);
+}
+
+.char.char-wrong {
+  color: var(--wrong);
+  background-color: rgba(248, 113, 113, 0.15);
+  border-radius: 3px;
+  text-decoration: underline wavy var(--wrong);
+}
+
+/* Animated Cursor Caret – đặt trên token-current */
+.token.token-current .char:first-child,
+.token.token-current {
+  position: relative;
+}
+
+.token.token-current .char.char-pending:first-child,
+.token.token-current {
+  /* caret sẽ hiện trước ký tự đầu tiên của token */
+}
+
+/* Caret nhấp nháy đặt trước ký tự đầu tiên chưa gõ */
+.token.token-current .char.char-pending:first-of-type::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 10%;
+  height: 80%;
+  width: 2px;
+  background: var(--accent);
+  border-radius: 2px;
+  animation: blink-caret 1s step-end infinite;
+}
+
+@keyframes blink-caret {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Caret khi đang gõ dở (char-typing là ký tự cuối trong typing state) */
+.token.token-current .char.char-typing:last-of-type::after {
+  content: '';
+  position: absolute;
+  right: -2px;
+  top: 10%;
+  height: 80%;
+  width: 2px;
+  background: var(--accent);
+  border-radius: 2px;
+  animation: blink-caret 1s step-end infinite;
+}
+
+@keyframes pulse-caret {
+  0% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.4); }
+  100% { box-shadow: 0 0 8px 3px rgba(var(--accent-rgb), 0.8); }
+}
+
+/* Hidden Input Element */
+#typing-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  top: 0;
+  left: 0;
+}
+
+/* ====================================================================
+   VIRTUAL KEYBOARD ANSI 5 ROWS
+   ==================================================================== */
+
+.keyboard-container {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.keyboard-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.keyboard-row:last-child {
+  margin-bottom: 0;
+}
+
+/* Phím bàn phím ảo (Key styling) */
+.key {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 48px;
+  min-width: 44px;
+  background-color: var(--key-bg);
+  border: 1px solid var(--key-border);
+  border-bottom: 4px solid var(--key-shadow);
+  border-radius: 8px;
+  color: var(--key-text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  user-select: none;
+  position: relative;
+  transition: all 0.08s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.key .key-primary {
+  line-height: 1;
+}
+
+.key .key-sub {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+/* Độ rộng các phím đặc biệt */
+.key.key-w-1-5 { min-width: 66px; }
+.key.key-w-1-75 { min-width: 78px; }
+.key.key-w-2 { min-width: 90px; }
+.key.key-w-2-25 { min-width: 104px; }
+.key.key-w-space { width: 280px; }
+
+/* Nút định vị F và J có gờ nổi (Bumps) */
+.key.key-home-bump::after {
+  content: '';
+  position: absolute;
+  bottom: 6px;
+  width: 14px;
+  height: 2px;
+  background-color: var(--accent);
+  border-radius: 1px;
+}
+
+/* Key Active (Highlight khi được ngón tay trỏ tới) */
+.key.active {
+  background-color: var(--accent) !important;
+  color: #12131a !important;
+  border-color: #ffd700 !important;
+  border-bottom-color: #b38600 !important;
+  transform: translateY(2px);
+  box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.9) !important;
+  font-weight: 800;
+}
+
+.key.active .key-sub {
+  color: #2b2b2b !important;
+}
+
+/* Key Error (Flash đỏ khi bấm sai) */
+.key.error {
+  background-color: var(--wrong) !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+  transform: translateY(2px) scale(0.97);
+  box-shadow: 0 0 18px rgba(248, 113, 113, 0.9) !important;
+}
+
+/* Phân vùng ngón tay (Finger Zones) */
+.finger-left-pinky { background-color: var(--zone-left-pinky); }
+.finger-left-ring { background-color: var(--zone-left-ring); }
+.finger-left-middle { background-color: var(--zone-left-middle); }
+.finger-left-index { background-color: var(--zone-left-index); }
+.finger-thumbs { background-color: var(--zone-thumbs); }
+.finger-right-index { background-color: var(--zone-right-index); }
+.finger-right-middle { background-color: var(--zone-right-middle); }
+.finger-right-ring { background-color: var(--zone-right-ring); }
+.finger-right-pinky { background-color: var(--zone-right-pinky); }
+
+/* ====================================================================
+   VIRTUAL HANDS SVG
+   ==================================================================== */
+
+.hands-svg-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin: 1.5rem auto 0;
+  max-width: 600px;
+}
+
+.hand-svg {
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.2));
+  transition: all 0.2s ease;
+}
+
+.finger-path {
+  fill: var(--bg-tertiary);
+  stroke: var(--key-border);
+  stroke-width: 2;
+  transition: fill 0.12s ease, stroke 0.12s ease, filter 0.12s ease;
+}
+
+/* Ngón tay sáng lên khi cần bấm */
+.finger-path.finger-active {
+  fill: var(--accent) !important;
+  stroke: #ffffff !important;
+  filter: drop-shadow(0 0 10px var(--accent));
+  transform-origin: center;
+  animation: finger-bounce 0.4s ease alternate infinite;
+}
+
+@keyframes finger-bounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3px); }
+}
+
+/* ====================================================================
+   STATISTICS & METRIC CARDS
+   ==================================================================== */
+
+.stat-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.1;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 0.25rem;
+}
+
+/* Modal Popup */
+.modal-backdrop-custom {
+  background-color: rgba(10, 10, 20, 0.75);
+  backdrop-filter: blur(8px);
+}
+
+/* Heatmap Key Colors */
+.heatmap-cold { background-color: rgba(34, 197, 94, 0.3) !important; color: #4ade80 !important; }
+.heatmap-warm { background-color: rgba(234, 179, 8, 0.4) !important; color: #facc15 !important; }
+.heatmap-hot { background-color: rgba(239, 68, 68, 0.5) !important; color: #f87171 !important; border-color: #ef4444 !important; }
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  #text-display {
+    font-size: 1.25rem;
+  }
+  .key {
+    height: 38px;
+    min-width: 28px;
+    font-size: 0.7rem;
+  }
+  .key.key-w-space {
+    width: 160px;
+  }
+  .keyboard-row {
+    gap: 3px;
+    margin-bottom: 3px;
+  }
+}
