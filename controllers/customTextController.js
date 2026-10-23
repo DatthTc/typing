@@ -75,8 +75,10 @@ exports.create = async (req, res) => {
     if (customRecord && customRecord._id) {
       return res.redirect(`/practice?customId=${customRecord._id}`);
     } else {
-      req.session.tempCustomText = { title: cleanTitle, content: cleanContent };
-      return res.redirect('/practice');
+      // Fallback khi DB nghẽn hoặc serverless: chuyển thẳng nội dung vào query để gõ ngay lập tức!
+      const encodedTitle = encodeURIComponent(cleanTitle);
+      const encodedText = encodeURIComponent(cleanContent);
+      return res.redirect(`/practice?title=${encodedTitle}&text=${encodedText}`);
     }
   } catch (error) {
     console.error('Lỗi khi tạo custom text:', error);

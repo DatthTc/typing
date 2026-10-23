@@ -101,19 +101,33 @@ exports.show = async (req, res) => {
 // Practice mode chung (hỗ trợ query param customId hoặc custom text)
 exports.practiceCustom = async (req, res) => {
   try {
-    const { customId } = req.query;
+    const { customId, text, title } = req.query;
     let customData = null;
 
     if (customId) {
-      const CustomText = require('../models/CustomText');
-      customData = await CustomText.findById(customId).lean();
+      try {
+        const CustomText = require('../models/CustomText');
+        customData = await CustomText.findById(customId).lean();
+      } catch (dbErr) {
+        console.warn('Lỗi đọc customId từ DB:', dbErr.message);
+      }
     }
 
-    // Fallback văn bản mặc định nếu không có customId
+    // Lấy nội dung từ query hoặc session fallback
+    const resolvedContent = (customData && customData.content) ||
+      (text ? decodeURIComponent(text) : null) ||
+      (req.session && req.session.tempCustomText && req.session.tempCustomText.content) ||
+      'Việt Nam đất nước ta ơi, mênh mông biển lúa đâu trời đẹp hơn. Cánh cò bay lả rập rờn, mây mờ che đỉnh Trường Sơn sớm chiều.';
+
+    const resolvedTitle = (customData && customData.title) ||
+      (title ? decodeURIComponent(title) : null) ||
+      (req.session && req.session.tempCustomText && req.session.tempCustomText.title) ||
+      'Luyện tập văn bản tùy chọn';
+
     const lesson = {
       _id: customData ? customData._id : 'custom-session',
-      title: customData ? customData.title : 'Luyện tập văn bản tùy chọn',
-      content: customData ? customData.content : 'Việt Nam đất nước ta ơi, mênh mông biển lúa đâu trời đẹp hơn. Cánh cò bay lả rập rờn, mây mờ che đỉnh Trường Sơn sớm chiều.',
+      title: resolvedTitle,
+      content: resolvedContent,
       description: 'Luyện tập tự do với đoạn văn bản tiếng Việt',
       targetKeys: []
     };
@@ -128,6 +142,19 @@ exports.practiceCustom = async (req, res) => {
     });
   } catch (error) {
     console.error('Lỗi practiceCustom:', error);
-    res.redirect('/');
+    // Kể cả có lỗi bất ngờ, render luôn trang practice với bài mẫu thay vì redirect về home
+    res.render('pages/practice', {
+      title: 'Luyện tập tự do - VN Typing',
+      lesson: {
+        _id: 'default',
+        title: 'Luyện tập tự do',
+        content: 'Học gõ mười ngón tiếng Việt phản xạ nhanh nhạy và chính xác mỗi ngày.',
+        targetKeys: []
+      },
+      nextLesson: null,
+      inputMethod: 'TELEX',
+      soundTheme: 'blue',
+      user: null
+    });
   }
 };
