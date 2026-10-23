@@ -588,10 +588,16 @@ class TypingEngine {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (document.getElementById('text-display')) {
+function initEngine() {
+  if (document.getElementById('text-display') && !window.typingEngine) {
     window.typingEngine = new TypingEngine();
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initEngine);
+} else {
+  initEngine();
+}
 
 export { TypingEngine };

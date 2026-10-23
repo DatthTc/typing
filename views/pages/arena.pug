@@ -59,8 +59,9 @@ block content
         input#arena-typing-input(type="text", autocomplete="off", autocorrect="off", spellcheck="false", tabindex="0")
 
 block scripts
+  script(src="https://cdn.socket.io/4.7.2/socket.io.min.js")
   script.
-    const socket = io();
+    const socket = typeof io !== 'undefined' ? io() : { on: () => {}, emit: () => {} };
     let currentRoom = '';
     let currentUser = '';
     let raceText = '';

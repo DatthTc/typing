@@ -46,6 +46,16 @@ app.use((req, res, next) => {
   next();
 });
 
+// Đảm bảo kết nối MongoDB sẵn sàng trước khi xử lý request
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.warn('DB connect warning:', err.message);
+  }
+  next();
+});
+
 // Mount Routes
 app.use('/', indexRoutes);
 app.use('/api', apiRoutes);
