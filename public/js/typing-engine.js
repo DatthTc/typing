@@ -359,7 +359,27 @@ function parseTelex(keys) {
     const rawKey = keys[i];
     const key = rawKey.toLowerCase();
 
-    // 1. Phím dấu thanh
+    // 0. Phím tắt ngoặc vuông [ và ] trong Telex chuẩn
+    if (key === '[' || rawKey === '{') {
+      const isUpper = rawKey === '{';
+      if (chars.length > 0 && ['u', 'ư'].includes(chars[chars.length - 1].toLowerCase())) {
+        const uIdx = chars.length - 1;
+        chars[uIdx] = chars[uIdx] === chars[uIdx].toUpperCase() ? 'Ư' : 'ư';
+        chars.push(isUpper ? 'Ơ' : 'ơ');
+      } else if (chars.length > 0 && ['o', 'ô'].includes(chars[chars.length - 1].toLowerCase())) {
+        chars[chars.length - 1] = isUpper ? 'Ơ' : 'ơ';
+      } else {
+        chars.push(isUpper ? 'Ơ' : 'ơ');
+      }
+      continue;
+    }
+    if (key === ']' || rawKey === '}') {
+      const isUpper = rawKey === '}';
+      chars.push(isUpper ? 'Ư' : 'ư');
+      continue;
+    }
+
+    // 1. Phím dấu thanh (s, f, r, x, j, z)
     if (TELEX_TONE_MAP[key] !== undefined) {
       const toneIdx = TELEX_TONE_MAP[key];
       const tonePos = findTonePosition(chars);
@@ -375,7 +395,7 @@ function parseTelex(keys) {
       }
     }
 
-    // 2. Phím mũ
+    // 2. Phím mũ (aa, ee, oo, dd)
     if (TELEX_CIRCUMFLEX[key]) {
       let modified = false;
       for (let j = chars.length - 1; j >= 0; j--) {
@@ -390,8 +410,7 @@ function parseTelex(keys) {
           if (targetBase === 'đ') {
             chars[j] = isCharUpper ? 'Đ' : 'đ';
           } else if (VOWEL_TABLE[targetBase]) {
-            const newChar = VOWEL_TABLE[targetBase][currentTone];
-            chars[j] = isCharUpper ? newChar.toUpperCase() : newChar;
+            chars[j] = isCharUpper ? VOWEL_TABLE[targetBase][currentTone].toUpperCase() : VOWEL_TABLE[targetBase][currentTone];
           }
           modified = true;
           break;
@@ -400,7 +419,7 @@ function parseTelex(keys) {
       if (modified) continue;
     }
 
-    // 3. Phím móc
+    // 3. Phím móc (w)
     if (key === 'w') {
       let modified = false;
       let uIdx = -1, oIdx = -1;
@@ -434,14 +453,32 @@ function parseTelex(keys) {
             const targetBase = TELEX_HORN[base];
             const isCharUpper = c === c.toUpperCase() && c !== c.toLowerCase();
             const currentTone = info ? info.toneIdx : 0;
-            const newChar = VOWEL_TABLE[targetBase][currentTone];
-            chars[j] = isCharUpper ? newChar.toUpperCase() : newChar;
+            chars[j] = isCharUpper ? VOWEL_TABLE[targetBase][currentTone].toUpperCase() : VOWEL_TABLE[targetBase][currentTone];
             modified = true;
             break;
           }
         }
       }
       if (modified) continue;
+
+      // Xử lý w đứng độc lập hoặc sau phụ âm (nhw -> như, nw -> nư, w -> ư)
+      const isUpper = rawKey === 'W';
+      if (chars.length > 0 && chars[chars.length - 1].toLowerCase() === 'o') {
+        const oIdx = chars.length - 1;
+        if (oIdx > 0 && ['u', 'ư'].includes(chars[oIdx - 1].toLowerCase())) {
+          chars[oIdx - 1] = chars[oIdx - 1] === chars[oIdx - 1].toUpperCase() ? 'Ư' : 'ư';
+          chars[oIdx] = chars[oIdx] === chars[oIdx].toUpperCase() ? 'Ơ' : 'ơ';
+          continue;
+        }
+      }
+      chars.push(isUpper ? 'Ư' : 'ư');
+      continue;
+    }
+
+    // Nếu gõ o sau ư: tự động thành ươ
+    if (key === 'o' && chars.length > 0 && chars[chars.length - 1].toLowerCase() === 'ư') {
+      chars.push(rawKey === 'O' ? 'Ơ' : 'ơ');
+      continue;
     }
 
     chars.push(rawKey);
@@ -578,16 +615,18 @@ function checkWordMatch(typedKeys, targetWord, method = 'TELEX') {
   if (currentWord === targetWord) {
     return { status: 'complete', currentWord };
   }
-  if (targetWord.startsWith(currentWord)) {
+  if (targetWord.startsWith(currentWord) || targetWord.toLowerCase().startsWith(currentWord.toLowerCase())) {
     return { status: 'partial', currentWord };
   }
   const targetWithoutTone = removeTone(targetWord);
-  if (targetWithoutTone === currentWord || targetWithoutTone.startsWith(currentWord)) {
+  if (targetWithoutTone === currentWord || targetWithoutTone.startsWith(currentWord) ||
+      targetWithoutTone.toLowerCase().startsWith(currentWord.toLowerCase())) {
     return { status: 'partial', currentWord };
   }
   const targetRaw = removeAllAccents(targetWord);
   const currentRaw = removeAllAccents(currentWord);
-  if (targetRaw === currentRaw || targetRaw.startsWith(currentRaw)) {
+  if (targetRaw === currentRaw || targetRaw.startsWith(currentRaw) ||
+      targetRaw.toLowerCase().startsWith(currentRaw.toLowerCase())) {
     return { status: 'partial', currentWord };
   }
   return { status: 'wrong', currentWord };
@@ -804,16 +843,26 @@ class TypingEngine {
     if (IGNORE_KEYS.has(e.key)) return;
     if (e.key === 'Shift') return;
 
-    e.preventDefault();
-
     if (!this.isStarted) {
       this.startTimer();
     }
 
     if (e.key === 'Escape') {
       this.resetCurrentWord();
+      e.preventDefault();
       return;
     }
+
+    if (this.imeMode === 'SYSTEM') {
+      // Ở chế độ Unikey ngoài: để input ẩn nhận phím tự nhiên từ Unikey / EVKey
+      if (e.key === 'Backspace' && document.getElementById('typing-input')?.value === '') {
+        e.preventDefault();
+      }
+      return;
+    }
+
+    // Ở chế độ Bộ gõ Web nội bộ: chặn hành vi mặc định và tự xử lý ghép âm
+    e.preventDefault();
 
     if (e.key === 'Backspace') {
       if (e.ctrlKey) {
@@ -824,16 +873,14 @@ class TypingEngine {
       return;
     }
 
-    if (this.imeMode === 'INTERNAL') {
-      this.processInternalKey(e.key);
-    } else {
-      this.processSystemKey(e.key);
-    }
+    this.processInternalKey(e.key);
   }
 
   resetCurrentWord() {
     this.currentKeys = [];
     this.currentTypedWord = '';
+    const inp = document.getElementById('typing-input');
+    if (inp) inp.value = '';
     const token = this.tokens[this.tokenIndex];
     if (token && token.type === 'word') {
       token.chars.forEach((_, ci) => {
@@ -851,7 +898,7 @@ class TypingEngine {
       if (token && token.type === 'word') {
         const check = checkWordMatch(this.currentKeys, token.value, this.inputMethod);
         this.currentTypedWord = check.currentWord;
-        this.updateWordProgress(token, check.currentWord);
+        this.updateWordProgress(token, check.currentWord, check.status === 'wrong');
       }
       this.highlightNextExpectedKey();
     }
@@ -863,7 +910,7 @@ class TypingEngine {
 
     this.totalKeystrokes++;
 
-    // 1. Space token
+    // 1. Phím Space khi đang ở token Space
     if (token.type === 'space') {
       if (pressedKey === ' ' || pressedKey === 'Enter') {
         this.correctKeystrokes++;
@@ -872,8 +919,13 @@ class TypingEngine {
         this.tokenIndex++;
         this.currentKeys = [];
         this.currentTypedWord = '';
-        this.updateCursor();
-        this.highlightNextExpectedKey();
+
+        if (this.tokenIndex >= this.tokens.length) {
+          this.finish();
+        } else {
+          this.updateCursor();
+          this.highlightNextExpectedKey();
+        }
       } else {
         this.recordMissedKey(pressedKey);
         flashErrorKey(pressedKey);
@@ -898,8 +950,13 @@ class TypingEngine {
           this.markTokenSuccess(this.tokenIndex);
           this.tokenIndex++;
         }
-        this.updateCursor();
-        this.highlightNextExpectedKey();
+
+        if (this.tokenIndex >= this.tokens.length) {
+          this.finish();
+        } else {
+          this.updateCursor();
+          this.highlightNextExpectedKey();
+        }
       } else {
         this.recordMissedKey(' ');
         flashErrorKey(' ');
@@ -912,23 +969,28 @@ class TypingEngine {
         if (this.tokenIndex < this.tokens.length && this.tokens[this.tokenIndex].type === 'space') {
           this.tokenIndex++;
         }
-        this.updateCursor();
-        this.highlightNextExpectedKey();
+
+        if (this.tokenIndex >= this.tokens.length) {
+          this.finish();
+        } else {
+          this.updateCursor();
+          this.highlightNextExpectedKey();
+        }
       }
       this.updateStats();
       return;
     }
 
-    // 3. Cơ chế tự reset nếu gõ lại phím đầu tiên
+    // 3. Cơ chế tự reset nếu gõ lại phím đầu tiên khi từ đang lỗi
     const firstChar = token.chars[0];
     if (pressedKey === firstChar && this.currentKeys.length > 0 && this.currentTypedWord !== token.value) {
-      this.currentKeys = [pressedKey];
-      const check = checkWordMatch(this.currentKeys, token.value, this.inputMethod);
-      if (check.status !== 'wrong') {
+      const singleCheck = checkWordMatch([pressedKey], token.value, this.inputMethod);
+      if (singleCheck.status !== 'wrong') {
+        this.currentKeys = [pressedKey];
         this.correctKeystrokes++;
         playKeySound(this.soundTheme);
-        this.currentTypedWord = check.currentWord;
-        this.updateWordProgress(token, check.currentWord);
+        this.currentTypedWord = singleCheck.currentWord;
+        this.updateWordProgress(token, singleCheck.currentWord, false);
         this.highlightNextExpectedKey();
         this.updateStats();
         return;
@@ -948,85 +1010,93 @@ class TypingEngine {
       this.tokenIndex++;
       this.currentKeys = [];
       this.currentTypedWord = '';
-      this.updateCursor();
-      this.highlightNextExpectedKey();
+
+      if (this.tokenIndex >= this.tokens.length) {
+        this.finish();
+      } else {
+        this.updateCursor();
+        this.highlightNextExpectedKey();
+      }
     } else if (check.status === 'partial') {
       this.correctKeystrokes++;
       playKeySound(this.soundTheme);
       this.currentTypedWord = check.currentWord;
-      this.updateWordProgress(token, check.currentWord);
+      this.updateWordProgress(token, check.currentWord, false);
       this.highlightNextExpectedKey();
     } else {
-      this.currentKeys.pop();
+      // Giữ nguyên phím để người dùng thấy lỗi và dùng Backspace xóa được
       this.recordMissedKey(pressedKey);
       flashErrorKey(pressedKey);
       playErrorSound();
-      this.markTokenError(this.tokenIndex);
+      this.currentTypedWord = check.currentWord;
+      this.updateWordProgress(token, check.currentWord, true);
     }
 
     this.updateStats();
   }
 
-  updateWordProgress(token, currentWord) {
+  updateWordProgress(token, currentWord, isError = false) {
     if (!token || !token.chars) return;
     token.chars.forEach((_, ci) => {
       const el = document.getElementById(`char-${this.tokenIndex}-${ci}`);
       if (!el) return;
       if (ci < currentWord.length) {
-        el.className = 'char char-typing';
+        el.className = isError ? 'char char-wrong' : 'char char-typing';
       } else {
         el.className = 'char char-pending';
       }
     });
   }
 
-  processSystemKey(pressedKey) {
+  handleSystemInput(e) {
+    if (this.imeMode !== 'SYSTEM') return;
     const token = this.tokens[this.tokenIndex];
     if (!token) return;
 
+    if (!this.isStarted) {
+      this.startTimer();
+    }
+
+    const inputEl = e.target;
+    const val = inputEl.value;
+    playKeySound(this.soundTheme);
     this.totalKeystrokes++;
 
-    if (token.type === 'space') {
-      if (pressedKey === ' ' || pressedKey === 'Enter') {
-        this.correctKeystrokes++;
-        playKeySound(this.soundTheme);
+    // Khi người dùng bấm Space hoặc Enter
+    if (val.endsWith(' ') || val.endsWith('\n')) {
+      const typed = val.trim();
+      if (typed === token.value) {
+        this.correctKeystrokes += token.value.length + 1;
+        this.markTokenSuccess(this.tokenIndex);
+      } else {
+        playErrorSound();
+        this.markTokenFail(this.tokenIndex);
+      }
+
+      this.tokenIndex++;
+      this.currentTypedWord = '';
+      inputEl.value = '';
+
+      if (this.tokenIndex < this.tokens.length && this.tokens[this.tokenIndex].type === 'space') {
         this.markTokenSuccess(this.tokenIndex);
         this.tokenIndex++;
+      }
+
+      if (this.tokenIndex >= this.tokens.length) {
+        this.finish();
+      } else {
         this.updateCursor();
         this.highlightNextExpectedKey();
-      } else {
-        this.recordMissedKey(pressedKey);
-        flashErrorKey(pressedKey);
-        playErrorSound();
-        this.markTokenError(this.tokenIndex);
       }
       this.updateStats();
       return;
     }
 
-    const expectedChar = token.chars[this.currentKeys.length];
-    if (pressedKey === expectedChar) {
-      this.correctKeystrokes++;
-      playKeySound(this.soundTheme);
-      this.currentKeys.push(pressedKey);
-
-      const el = document.getElementById(`char-${this.tokenIndex}-${this.currentKeys.length - 1}`);
-      if (el) el.className = 'char char-correct';
-
-      if (this.currentKeys.length >= token.chars.length) {
-        this.markTokenSuccess(this.tokenIndex);
-        this.tokenIndex++;
-        this.currentKeys = [];
-        this.updateCursor();
-      }
-      this.highlightNextExpectedKey();
-    } else {
-      this.recordMissedKey(expectedChar || pressedKey);
-      flashErrorKey(pressedKey);
-      playErrorSound();
-      this.markTokenError(this.tokenIndex);
-    }
-
+    // Đang gõ dở từ
+    this.currentTypedWord = val;
+    const isMismatch = !token.value.startsWith(val) && !token.value.toLowerCase().startsWith(val.toLowerCase());
+    this.updateWordProgress(token, val, isMismatch);
+    this.highlightNextExpectedKey();
     this.updateStats();
   }
 
@@ -1151,8 +1221,20 @@ class TypingEngine {
       this.handleKeyDown(e);
     });
 
+    const inp = document.getElementById('typing-input');
+    inp?.addEventListener('input', (e) => {
+      if (this.imeMode === 'SYSTEM') {
+        this.handleSystemInput(e);
+      }
+    });
+
     this.textDisplay?.addEventListener('click', () => {
-      const inp = document.getElementById('typing-input');
+      inp?.focus();
+    });
+
+    // Tự động focus lại vào input khi người dùng click vào vùng làm việc
+    window.addEventListener('click', (e) => {
+      if (['BUTTON', 'SELECT', 'A', 'INPUT'].includes(e.target?.tagName)) return;
       inp?.focus();
     });
 

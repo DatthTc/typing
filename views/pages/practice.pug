@@ -17,7 +17,7 @@ block content
       //- Thanh công cụ (Tools & Options)
       .flex.flex-wrap.items-center.gap-3
         //- Toggle Chế độ bộ gõ: Web vs Ngoài
-        div(class="flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-800 border border-slate-700")
+        div(class="flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-800 border border-slate-700", title="Bộ gõ Web: gõ trực tiếp tự nhận dấu (tắt Unikey hoặc để E). Dùng Unikey ngoài: gõ bằng Unikey/EVKey có sẵn trên máy.")
           label.relative.inline-flex.items-center.cursor-pointer
             input#toggle-ime-mode.sr-only.peer(type="checkbox", checked)
             div(class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-500")
@@ -112,5 +112,5 @@ block content
             | Xem thống kê chi tiết & Heatmap
 
 block scripts
-  //- Nạp core typing engine độc lập (v=2.1 để ép trình duyệt xóa cache)
-  script(src="/js/typing-engine.js?v=2.1")
+  //- Nạp core typing engine độc lập (v=2.2 để ép trình duyệt xóa cache)
+  script(src="/js/typing-engine.js?v=2.2")
